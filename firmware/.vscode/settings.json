@@ -1,0 +1,19 @@
+{
+  "idf.espIdfPath": "/Users/brainignacio/esp/v5.2/esp-idf",
+  "idf.toolsPath": "/Users/brainignacio/.espressif",
+  "idf.pythonInstallPath": "/usr/local/bin/python3",
+  "idf.openOcdConfigs": [
+    "board/esp32c3-builtin.cfg"
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32c3"
+  },
+  "clangd.path": "/usr/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=/Users/brainignacio/.espressif/tools/riscv32-esp-elf/esp-2022r1-11.2.0/riscv32-esp-elf/bin/riscv32-esp-elf-gcc",
+    "--compile-commands-dir=/Users/brainignacio/learning/picframe_colepd/firmware/build"
+  ],
+  "idf.port": "/dev/tty.usbserial-14250",
+  "idf.flashType": "UART"
+}

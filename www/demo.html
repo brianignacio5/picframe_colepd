@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>EPD Converter Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EPD Image Converter Demo</h1>
+        <p>Select an image to convert to EPD format with 7-color palette and Floyd-Steinberg dithering.</p>
+        
+        <input type="file" id="imageInput" accept="image/*">
+        
+        <div class="controls">
+            <button id="convertBtn" disabled>Convert to EPD Format</button>
+            <button id="downloadBtn" disabled>Download Binary Data</button>
+        </div>
+        
+        <div class="status" id="status">Select an image to begin</div>
+        
+        <div class="result">
+            <div style="display: inline-block; margin: 10px;">
+                <h3>Original (scaled to 600x448)</h3>
+                <canvas id="originalCanvas" width="600" height="448"></canvas>
+            </div>
+            <div style="display: inline-block; margin: 10px;">
+                <h3>EPD Preview (7-color palette)</h3>
+                <canvas id="previewCanvas" width="600" height="448"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="epd-converter.js"></script>
+    <script>
+        let converter = new EPDConverter();
+        let binaryData = null;
+        
+        const imageInput = document.getElementById('imageInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const previewCanvas = document.getElementById('previewCanvas');
+        
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            status.textContent = 'Loading image...';
+            
+            const img = new Image();
+            img.onload = function() {
+                // Draw scaled image to original canvas
+                const ctx = originalCanvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 600, 448);
+                
+                // Calculate scaling to fit within 600x448 while maintaining aspect ratio
+                const scale = Math.min(600 / img.width, 448 / img.height);
+                const newWidth = img.width * scale;
+                const newHeight = img.height * scale;
+                const x = (600 - newWidth) / 2;
+                const y = (448 - newHeight) / 2;
+                
+                ctx.drawImage(img, x, y, newWidth, newHeight);
+                
+                convertBtn.disabled = false;
+                status.textContent = 'Image loaded. Click Convert to process.';
+            };
+            
+            img.onerror = function() {
+                status.textContent = 'Error loading image.';
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+        
+        convertBtn.addEventListener('click', function() {
+            convertBtn.disabled = true;
+            status.textContent = 'Converting image...';
+            
+            try {
+                const startTime = performance.now();
+                const result = converter.convertImage(originalCanvas);
+                const endTime = performance.now();
+                
+                // Show preview
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.drawImage(result.previewCanvas, 0, 0);
+                
+                binaryData = result.binaryData;
+                downloadBtn.disabled = false;
+                
+                status.innerHTML = `
+                    <strong>Conversion complete!</strong><br>
+                    Processing time: ${Math.round(endTime - startTime)}ms<br>
+                    Binary size: ${result.binaryData.length} bytes<br>
+                    Colors used: Black, White, Green, Blue, Red, Yellow, Orange
+                `;
+                
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+                console.error('Conversion error:', error);
+            }
+            
+            convertBtn.disabled = false;
+        });
+        
+        downloadBtn.addEventListener('click', function() {
+            if (!binaryData) return;
+            
+            const blob = new Blob([binaryData], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'epd_image.bin';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            status.textContent += ' | Binary file downloaded!';
+        });
+    </script>
+</body>
+</html> 
