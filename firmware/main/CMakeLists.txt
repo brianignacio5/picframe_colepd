@@ -1,5 +1,5 @@
-set(srcs "main.c" "epd.c")
+idf_component_register(SRCS "main.c" "epd.c"
+                    INCLUDE_DIRS ".")
 
-idf_component_register(SRCS ${srcs}
-                    INCLUDE_DIRS "."
-                    EMBED_FILES icons.bmp)
+# Embed the icons file
+target_add_binary_data(${COMPONENT_TARGET} "icons.bmp" TEXT)
