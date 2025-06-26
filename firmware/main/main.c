@@ -278,15 +278,15 @@ static esp_err_t hello_handler(httpd_req_t *req)
         "</script>\n"
         "</head>"
         "<body>"
-        "<h1>🖼️ ESP32C3 EPD PicFrame</h1>"
+        "<h1>ESP32C3 EPD PicFrame</h1>"
         "<div class='card'>"
-        "<h2>📡 Connection Info</h2>"
+        "<h2>Connection Info</h2>"
         "<p>WiFi AP: " WIFI_SSID "</p>"
         "<p>Password: " WIFI_PASS "</p>"
         "<p>IP Address: 192.168.4.1</p>"
         "</div>"
         "<div class='card'>"
-        "<h2>📤 Upload New Image</h2>"
+        "<h2>Upload New Image</h2>"
         "<form class='upload-form' id='uploadForm'>"
         "<input type='file' name='image' accept='image/*' required id='imageInput'>"
         "<div class='preview-container'>"
@@ -306,7 +306,7 @@ static esp_err_t hello_handler(httpd_req_t *req)
         "</form>"
         "</div>"
         "<div class='card'>"
-        "<h2>📺 EPD Status</h2>"
+        "<h2>EPD Status</h2>"
         "<p>Status: Ready</p>"
         "<p>Display: Active</p>"
         "</div>"
@@ -733,63 +733,6 @@ void app_main(void)
 	
 	ESP_LOGI(TAG, "Icon embedded successfully, size: %d bytes", icon_size);
 	ESP_LOGI(TAG, "Icon will be used for EPD status display");
-	
-	// Test image partition loading
-	ESP_LOGI(TAG, "Testing image partition access...");
-
-	// Find the images partition (type 123, subtype 0)
-	const esp_partition_t *part = esp_partition_find_first(123, 0, NULL);
-	if (part != NULL) {
-		ESP_LOGI(TAG, "Found images partition: size=%lu bytes, offset=0x%lx", (unsigned long)part->size, (unsigned long)part->address);
-		
-		// Map the partition to access image data
-		const flash_image_t *images = NULL;
-		spi_flash_mmap_handle_t mmap_handle;
-		esp_err_t err = esp_partition_mmap(part, 0, IMG_SIZE_BYTES*IMG_SLOT_COUNT, SPI_FLASH_MMAP_DATA, (const void**)&images, &mmap_handle);
-
-		if (err == ESP_OK) {
-			ESP_LOGI(TAG, "Partition mapped successfully, checking for images...");
-			ESP_LOGI(TAG, "Looking for %d image slots of %d bytes each", IMG_SLOT_COUNT, IMG_SIZE_BYTES);
-			
-			// Check each image slot
-			bool found_image = false;
-			for (int i = 0; i < IMG_SLOT_COUNT; i++) {
-				ESP_LOGI(TAG, "Slot %d: header magic = 0x%08lx", i, (unsigned long)images[i].hdr.id);
-				
-				if (img_valid(&images[i].hdr)) {
-					ESP_LOGI(TAG, "✅ Found valid image in slot %d!", i);
-					ESP_LOGI(TAG, "   Magic: 0x%08lx", (unsigned long)images[i].hdr.id);
-					ESP_LOGI(TAG, "   Timestamp: %llu", (unsigned long long)images[i].hdr.timestamp);
-					ESP_LOGI(TAG, "   Data size: %d bytes", 600*448/2);
-					found_image = true;
-					
-					// Step 4: Send to EPD!
-					ESP_LOGI(TAG, "🖼️  Sending image to EPD...");
-					epd_send(images[i].data, ICON_NONE);
-					ESP_LOGI(TAG, "📺 EPD display complete!");
-					
-					ESP_LOGI(TAG, "💤 Shutting down EPD...");
-					epd_shutdown();
-					ESP_LOGI(TAG, "✅ EPD test successful!");
-					break;
-				} else {
-					ESP_LOGI(TAG, "   Slot %d: Invalid or empty", i);
-				}
-			}
-			
-			if (!found_image) {
-				ESP_LOGW(TAG, "No valid images found in partition");
-				ESP_LOGI(TAG, "Expected magic: 0x%08lx", 0xfafa1a1aUL);
-			}
-			
-			// Unmap the partition
-			spi_flash_munmap(mmap_handle);
-		} else {
-			ESP_LOGE(TAG, "Failed to map partition: %s", esp_err_to_name(err));
-		}
-	} else {
-		ESP_LOGE(TAG, "Images partition not found!");
-	}
 	
 	ESP_LOGI(TAG, "📋 EPD initialization complete");
 	ESP_LOGI(TAG, "🌐 Web server running - connect to WiFi and browse to http://192.168.4.1");
